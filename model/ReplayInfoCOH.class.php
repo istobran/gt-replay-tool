@@ -6,15 +6,15 @@ if(!defined('IN_DISCUZ')) {
 
 class ReplayInfoCOH
 {
-	public var $mapName;
-	var $playTime;
-	var $gameLength;
-	var $gameLengthString;//字符串表示的游戏时间
-	public var $players = array(
+	public $mapName;
+	public $playTime;
+	public $gameLength;
+	public $gameLengthString;//字符串表示的游戏时间
+	public $players = array(
 		'id'=>array(),
 		'side'=>array(),
 	);
-  public var $version;
+  public $version;
 
 	public function parseCOHFile($filename)
 	{

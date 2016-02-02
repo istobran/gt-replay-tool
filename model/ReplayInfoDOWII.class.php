@@ -6,16 +6,16 @@ if(!defined('IN_DISCUZ')) {
 
 class ReplayInfoDOWII
 {
-	var $mapName;
-	var $playTime;
-	var $gameLength;
-	var $gameLengthString;//字符串表示的游戏时间
-	var $players = array(
+	public $mapName;
+	public $playTime;
+	public $gameLength;
+	public $gameLengthString;//字符串表示的游戏时间
+	public $players = array(
 		'id'=>array(),
 		'side'=>array(),
 		'team'=>array(),
 	);
-  var $version = "2.2.0";
+  public $version = "2.2.0";
 	public function parseDOWIIFile($filename)
 	{
 		$fp = fopen($filename,"rb");

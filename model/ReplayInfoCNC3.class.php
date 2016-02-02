@@ -6,21 +6,21 @@ if(!defined('IN_DISCUZ')) {
 
 class ReplayInfoCNC3
 {
-	var $mapName;
-	var $mapFileName;
-	var $playTime;//游戏日期
-	var $gameLength;//游戏时长
-	var $gameLengthString;//字符串表示的游戏时间
-	var $players = array(
+	public $mapName;
+	public $mapFileName;
+	public $playTime;//游戏日期
+	public $gameLength;//游戏时长
+	public $gameLengthString;//字符串表示的游戏时间
+	public $players = array(
 		'id'=>array(),
 		'side'=>array(),
 		'team'=>array(),
 		'sidenumber'=>array(),
 		'ishuman'=>array(),
 	);
-	var $sides = array('1','2','6','7','8');//有效阵营
-	var $version;//版本号
-	var $prefix = 'cnc3';
+	public $sides = array('1','2','6','7','8');//有效阵营
+	public $version;//版本号
+	public $prefix = 'cnc3';
 
 	public function parseCNC3File($filename)
 	{

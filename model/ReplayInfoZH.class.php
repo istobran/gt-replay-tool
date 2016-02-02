@@ -6,21 +6,21 @@ if(!defined('IN_DISCUZ')) {
 
 class ReplayInfoZH
 {
-	var $mapName;
-	var $mapFileName;
-	var $playTime;//游戏日期
-	var $gameLength;//游戏时长
-	var $gameLengthString;//字符串表示的游戏时间
-	var $players = array(
+	public $mapName;
+	public $mapFileName;
+	public $playTime;//游戏日期
+	public $gameLength;//游戏时长
+	public $gameLengthString;//字符串表示的游戏时间
+	public $players = array(
 		'id'=>array(),
 		'side'=>array(),
 		'team'=>array(),
 		'sidenumber'=>array(),
 		'ishuman'=>array(),
 	);
-	var $sides = array('-1','-2','2','3','4','5','6','7','8','9','10','11','12','13');//有效阵营
-	var $version;//版本号
-	var $prefix = 'zh';
+	public $sides = array('-1','-2','2','3','4','5','6','7','8','9','10','11','12','13');//有效阵营
+	public $version;//版本号
+	public $prefix = 'zh';
 
 	public function parseZHFile($filename)
 	{
