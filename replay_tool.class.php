@@ -5,15 +5,14 @@ if(!defined('IN_DISCUZ')) {
 }
 
 class plugin_replay_tool {
-    function __construct(){
-
+    function __construct() {
+      global $_G;
+      $this->css = '<link rel="stylesheet" type="text/css" href="'.$_G['siteurl'].'/source/plugin/replay_tool/css/replay.css" />';
     }
 }
 
 class plugin_replay_tool_forum extends plugin_replay_tool {
-    // function viewthread_top() {
-    //   global $_G;
-    //   debug($_G);
-    //   return '<script>alert("viewthread2")</script>';
-    // }
+    function viewthread_top() {
+      return $this->css;
+    }
 }

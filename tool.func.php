@@ -1,9 +1,4 @@
 <?php
-
-if(!defined('IN_DISCUZ')) {
-    exit('Access Denied');
-}
-
 //sql语句单引号
 function quotesql($sql)
 {
@@ -19,7 +14,6 @@ function ffopen($filename,$type)
 function ffread($fp,$filesize)
 {
 	return fread($fp,$filesize);
-
 }
 
 //高低位互换

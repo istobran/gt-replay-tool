@@ -1,0 +1,51 @@
+<div>
+  <div class="frametop">
+  </div>
+  <div class="framebody">
+    <div class="section" id="replay_details">
+      <div class="header">
+        <div class="gameicon">
+          <img class="thisicon" src="./static/image/replays/{$replayinfo_g['gametype']}.gif" width="25" height="25"/>
+        </div>
+        <div class="howto_button">
+          <button class="howto_button_mouseout" onmouseover="this.className='howto_button_mouseover'" onmouseout="this.className='howto_button_mouseout'" onmousedown="this.className='howto_button_mousedown'" onmouseup="this.className='howto_button_mouseup'" onclick="javascript:window.open('http://www.gametotal.org/forum/showthread.php?t=21549');" title="怎么观看游戏录像?"><img class="inlineimg" src="./static/image/replays/{$replayinfo_g['gametype']}.gif" alt="ra3replay" title="怎么观看游戏录像?" width="25" height="25" border="0" style="vertical-align:baseline"/></button>
+        </div>
+      </div>
+      <div class="column">
+        <div class="map">
+          <img title="{$replayinfo_g['mapname']}" alt="{$replayinfo_g['mapname']}" src="{$data['mapimage']}"/><br/>{$replayinfo_g['mapdispname']}
+        </div>
+        <div class="download_button">
+          <a href="forum.php?mod=attachment{$is_archive}&amp;aid={$aidencode}">
+          <img src="./static/image/replays/download_replay.jpg" border="0">
+          </a>
+        </div>
+        <ul class="other_details">
+          <li>
+  下载次数：{$attach['downloads']}
+          </li>
+          <li>
+  录像大小:{$attach['attachsize']}
+          </li>
+        </ul>
+      </div>
+      <div class="teams">
+        {$data['player']}
+      </div>
+      <div class="wa">
+        <div class="wa_text">
+        </div>
+      </div>
+      <div id="features_awards">
+      </div>
+      <div class="clearer">
+      </div>
+      <div class="footer">
+        <span class="datetime">录像时间：[<strong>{$replayinfo_g['time']}</strong><strong>|</strong><strong>{$time_len}</strong>]</span>
+        <span class="version">录像版本：[<strong>{$replayinfo_g['version']}</strong>]</span>
+      </div>
+    </div>
+  </div>
+  <div class="framebot">
+  </div>
+</div>
