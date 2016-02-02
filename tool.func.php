@@ -1,4 +1,9 @@
 <?php
+
+if(!defined('IN_DISCUZ')) {
+    exit('Access Denied');
+}
+
 //sql语句单引号
 function quotesql($sql)
 {
