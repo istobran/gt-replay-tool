@@ -444,24 +444,17 @@ function build_html($replayinfo_g, $time_len, $data, $attach, $aidencode, $is_ar
       'is_archive' => $is_archive
   );
 
-  // $html_processed = preg_replace_callback(
-  //     '~\{\$(.*?)\}~si',
-  //     function($match) use ($replacement_array)
-  //     {
-  //         return str_replace($match[0], isset($replacement_array[$match[1]]) ? $replacement_array[$match[1]] : $match[0], $match[0]);
-  //     },
-  //     $html);
+  preg_match_all('~\{\$(.*?)\}~si', $html, $matches);
 
-  // foreach ($variable as $key => $value) {
-  //   # code...
-  // }
+  foreach ($replacement_array as $key => $value) {
+    $index = array_search($key, $matches[1]);
+    $html = str_replace($matches[0][$index], $value, $html);
+  }
 
   return $html;
 }
 
-function resolve_replay($attachmentid, $attach, $aidencode, $is_archive)
-{
-  global $_G;
+function checkDB() {
   //import resources
   define('PLUGIN_ROOT',
     DISCUZ_ROOT.'source'.
@@ -483,11 +476,18 @@ function resolve_replay($attachmentid, $attach, $aidencode, $is_archive)
   }
   include_once 'tool.func.php';
 
+}
+
+function resolve_replay($attachmentid, $attach, $aidencode, $is_archive)
+{
+  global $_G;
+  // check if replay info is already in database
+
+
   $replayinfo_g = get_replayinfo($attachmentid);
   $time_len = get_game_lentime($replayinfo_g['length']);
   $data = get_replayplayerinfo($attachmentid);
 
-  debug(build_html($replayinfo_g, $time_len, $data, $attach, $aidencode, $is_archive));
-  //return build_html();
+  return build_html($replayinfo_g, $time_len, $data, $attach, $aidencode, $is_archive);
 }
 ?>
