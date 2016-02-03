@@ -4,6 +4,13 @@ if(!defined('IN_DISCUZ')) {
     exit('Access Denied');
 }
 
+define('PLUGIN_ROOT',
+  DISCUZ_ROOT.'source'.
+  DIRECTORY_SEPARATOR.'plugin'.
+  DIRECTORY_SEPARATOR.'replay_tool'.
+  DIRECTORY_SEPARATOR
+);
+
 function get_replayinfo($aid){
 	$replay_g = DB::fetch_first("select * from replayinfo where attachmentid=".$aid);
 	return $replay_g;
@@ -454,14 +461,8 @@ function build_html($replayinfo_g, $time_len, $data, $attach, $aidencode, $is_ar
   return $html;
 }
 
-function checkDB() {
+function build_replay_info($attachmentid, $table_att) {
   //import resources
-  define('PLUGIN_ROOT',
-    DISCUZ_ROOT.'source'.
-    DIRECTORY_SEPARATOR.'plugin'.
-    DIRECTORY_SEPARATOR.'replay_tool'.
-    DIRECTORY_SEPARATOR
-  );
   $class_resources = array(
     'CNC4' => PLUGIN_ROOT.'model'.DIRECTORY_SEPARATOR.'ReplayInfoCNC4.class.php',
     'CNC3' => PLUGIN_ROOT.'model'.DIRECTORY_SEPARATOR.'ReplayInfoCNC3.class.php',
@@ -475,14 +476,354 @@ function checkDB() {
     include_once $value;
   }
   include_once 'tool.func.php';
+  $logStr = '';
+  //建立recobject
+  $attachinfo = DB::fetch_first("SELECT * FROM ".$table_att." a WHERE aid=".$attachmentid);
+  $logStr.= "SELECT * FROM ".$table_att." a WHERE aid=".$attachmentid;
+  $logStr.= "==";
+  $filename = DISCUZ_ROOT.'./data/attachment/forum/'.$attachinfo['attachment'];
+  $logStr.= $filename;
+  $logStr.="++";
+  file_put_contents(PLUGIN_ROOT.'log.txt', $logStr, FILE_APPEND);
+  $fp = ffopen($filename,"rb");
+  $fileData =ffread($fp,filesize($filename));
+  $fileExtension = getExt($attachinfo['filename']);
+      $gametype = get_replay_type($fileData, $fileExtension);
+      $gametype = strtolower($gametype);
+  switch($gametype)
+  {
+    case "dow2":
+    //dow2
+      $recObject = new ReplayInfoDOWII();
+      $recObject->parseDOWIIData($fileData);
+      //插入录像信息
+                 //取得地图名
+                 $mapChinesename = DB::fetch_first("SELECT name from replaymapname where filename = '$recObject->mapName'");
+                 $mapname = $mapChinesename['name'];
+                 $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'dow2', '$recObject->gameLength', '$recObject->mapName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$mapname')";
+                 DB::query($query);
+                 $replayinfo = DB::fetch_first("SELECT infoid FROM replayinfo WHERE attachmentid = $attachmentid");
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 //$debug = print_r($recObject->players, true);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`,
+                                     `replayinfoid`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".quotesql($recObject->players['id'][$index])."', '".$recObject->players['side'][$index]."', '".$recObject->players['team'][$index]."','".
+                     $replayinfo['infoid']."')";
+                     DB::query($query);
+                 }
+                 break;
+      break;
+    //zh
+    case "rep":
+              $recObject = new ReplayInfoZH();
+              $recObject->parseZHData($fileData);
+              //插入录像信息
+              //先将地图名称转换为安全sql语句
+              $repMap = str_replace("'", "''", $recObject->mapName);
+              $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'ZHReplay', '$recObject->gameLength', '$recObject->mapFileName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$repMap')";
+                 DB::query($query);
 
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     //取得阵营信息
+              $sidedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['side'][$index]."'");
+              if($recObject->players['ishuman'][$index] == '0')
+              {
+                //取得电脑名字
+                $namedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['id'][$index]."'");
+                $playername = $namedata['value'];
+              }else quotesql($playername = $recObject->players['id'][$index]);
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`,
+                                     `sidenumber`,
+                                     `ishuman`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".$playername."', '".$sidedata['value']."', '"
+                     .$recObject->players['team'][$index]."', '".$recObject->players['sidenumber'][$index]."', '".$recObject->players['ishuman'][$index]."'    )";
+                     DB::query($query);
+                 }
+                 break;
+    //CNC3
+    case "cnc3replay":
+              $recObject = new ReplayInfoCNC3();
+              $recObject->parseCNC3Data($fileData );
+              //插入录像信息
+              //先将地图名称转换为安全sql语句
+              $cc3Map = str_replace("'", "''", $recObject->mapName);
+              $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'CNC3Replay', '$recObject->gameLength', '$recObject->mapFileName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$cc3Map')";
+                 DB::query($query);
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     //取得阵营信息
+              $sidedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['side'][$index]."'");
+              if($recObject->players['ishuman'][$index] == '0')
+              {
+                //取得电脑名字
+                $namedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['id'][$index]."'");
+                $playername = $namedata['value'];
+              }else $playername = quotesql($recObject->players['id'][$index]);
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`,
+                                     `sidenumber`,
+                                     `ishuman`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".$playername."', '".$sidedata['value']."', '"
+                     .$recObject->players['team'][$index]."', '".$recObject->players['sidenumber'][$index]."', '".$recObject->players['ishuman'][$index]."'    )";
+                     DB::query($query);
+                 }
+                 break;
+                 //CNC4
+    case "cnc4replay":
+              $recObject = new ReplayInfoCNC4();
+              $recObject->parseCNC4Data($fileData );
+              //插入录像信息
+              //先将地图名称转换为安全sql语句
+              $mapChinesename = DB::fetch_first("SELECT name from replaymapname where filename = '$recObject->mapFileName'");
+                  $cc4Map = $mapChinesename['name'];
+              $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'CNC4Replay', '$recObject->gameLength', '$recObject->mapFileName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$cc4Map')";
+                 DB::query($query);
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     //取得阵营信息
+              $sidedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['side'][$index]."'");
+              if($recObject->players['ishuman'][$index] == '0')
+              {
+                //取得电脑名字
+                $namedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['id'][$index]."'");
+                $playername = $namedata['value'];
+              }else $playername = quotesql($recObject->players['id'][$index]);
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`,
+                                     `sidenumber`,
+                                     `ishuman`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".$playername."', '".$sidedata['value']."', '"
+                     .$recObject->players['team'][$index]."', '".$recObject->players['sidenumber'][$index]."', '".$recObject->players['ishuman'][$index]."'    )";
+                     DB::query($query);
+                 }
+                 break;
+    //凯恩之怒
+    case "kwreplay":
+              $recObject = new ReplayInfoKW();
+              $recObject->parseKWData($fileData);
+              //插入录像信息
+              //先将地图名称转换为安全sql语句
+              $kwMap = str_replace("'", "''", $recObject->mapName);
+              $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'KWReplay', '$recObject->gameLength', '$recObject->mapFileName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$kwMap')";
+                 DB::query($query);
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     //取得阵营信息
+                    $sidedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['side'][$index]."'");
+                    if($recObject->players['ishuman'][$index] == '0')
+                    {
+                      //取得电脑名字
+                      $namedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['id'][$index]."'");
+                      $playername = $namedata['value'];
+                    }else $playername = quotesql($recObject->players['id'][$index]);
+                    $query = "INSERT INTO replayplayerinfo (
+                                          `attachmentid` ,
+                                          `name` ,
+                                          `side` ,
+                                          `team`,
+                                          `sidenumber`,
+                                          `ishuman`
+                                          )
+                                          VALUES (
+                          '$attachmentid', '".$playername."', '".$sidedata['value']."', '"
+                          .$recObject->players['team'][$index]."', '".$recObject->players['sidenumber'][$index]."', '".$recObject->players['ishuman'][$index]."'    )";
+                          DB::query($query);
+                }
+                 break;
+    case 'ra3replay':
+              //红色警戒3
+              $recObject = new ReplayInfoRA3();
+              $recObject->parseRA3Data($fileData);
+              //先将地图名称转换为安全sql语句
+              $ra3Map = str_replace("'", "''", $recObject->mapName);
+              //插入录像信息
+              $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'RA3Replay', '$recObject->gameLength', '$recObject->mapFileName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$ra3Map')";
+                 DB::query($query);
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     //取得阵营信息
+              $sidedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['side'][$index]."'");
+              if($recObject->players['ishuman'][$index] == '0')
+              {
+                //取得电脑名字
+                $namedata = DB::fetch_first("SELECT `key`, `value` from replayDictionary where `key`='".$recObject->players['id'][$index]."'");
+                $playername = $namedata['value'];
+              }else $playername = quotesql($recObject->players['id'][$index]);
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`,
+                                     `sidenumber`,
+                                     `ishuman`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".$playername."', '".$sidedata['value']."', '"
+                     .$recObject->players['team'][$index]."', '".$recObject->players['sidenumber'][$index]."', '".$recObject->players['ishuman'][$index]."'    )";
+                     DB::query($query);
+                 }
+                 break;
+
+    case "rec":
+              //英雄连
+                 $recObject = new ReplayInfoCOH();
+                 //解析录像文件
+                 $recObject->parseCOHData($fileData );
+                 //插入录像信息
+                 //取得地图名
+                 $mapChinesename = DB::fetch_first("SELECT name from replaymapname where filename = '$recObject->mapName'");
+                 $mapname = $mapChinesename['name'];
+                 $query = "INSERT INTO replayinfo (
+                                 `infoid` ,
+                                 `gametype` ,
+                                 `length` ,
+                                 `mapname` ,
+                                 `time` ,
+                                 `attachmentid`,
+                                 `version`,
+                                 `mapdispname`
+                                 )
+                                 VALUES (
+                                 NULL , 'rec', '$recObject->gameLength', '$recObject->mapName', '$recObject->playTime',
+                                 '$attachmentid', '$recObject->version', '$mapname')";
+                 DB::query($query);
+                 //插入玩家信息
+                 $playercount = count($recObject->players['id']);
+                 //$debug = print_r($recObject->players, true);
+                 for($index=0;$index<$playercount;$index++)
+                 {
+                     $query = "INSERT INTO replayplayerinfo (
+                                     `attachmentid` ,
+                                     `name` ,
+                                     `side` ,
+                                     `team`
+                                     )
+                                     VALUES (
+                     '$attachmentid', '".quotesql($recObject->players['id'][$index])."', '".$recObject->players['side'][$index]."', -1
+                     )";
+                     DB::query($query);
+                 }
+                 break;
+  }
 }
 
 function resolve_replay($attachmentid, $attach, $aidencode, $is_archive)
 {
   global $_G;
   // check if replay info is already in database
-
+  $exits_attach = DB::fetch_first("select attachmentid from replayinfo where attachmentid=".$attachmentid);
+  if (empty($exits_attach)) {
+    $table_att = DB::table(getattachtablebyaid($attachmentid));
+    build_replay_info($attachmentid, $table_att);
+  }
 
   $replayinfo_g = get_replayinfo($attachmentid);
   $time_len = get_game_lentime($replayinfo_g['length']);
