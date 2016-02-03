@@ -158,7 +158,7 @@ function parseattach($attachpids, $attachtags, &$postlist, $skipaids = array()) 
 				foreach($findattach[$pid] as $aid => $find) {
 					// 嵌入录像解析代码 by BangZ 20160202
 					//debug($postlist[$pid]['message']);
-					if (preg_match("/replay|^(cnc4replay|ra3replay|kwreplay|cnc3replay|rep|rec)\t/", $postlist[$pid]['attachments'][$aid]['ext'])) {
+					if (preg_match("/^cnc4replay$|^ra3replay$|^kwreplay$|^cnc3replay$|^rep$|^rec$\t/", $postlist[$pid]['attachments'][$aid]['ext'])) {
 						if (in_array('replay_tool', $_G['setting']['plugins']['available'])) {	//判断插件是否启用
 							@include_once DISCUZ_ROOT.'./source/plugin/replay_tool/core.func.php';
 							// showmessage(function_exists('resolve_replay'));
@@ -208,7 +208,7 @@ function showattach($post, $type = 0) {
 			if(!empty($post['attachments'][$aid])) {
 				// 嵌入录像解析代码 by BangZ 20160202
 				global $_G;
-				if (preg_match("/replay|^(cnc4replay|ra3replay|kwreplay|cnc3replay|rep|rec)\t/", $post['attachments'][$aid]['ext'])) {
+				if (preg_match("/^cnc4replay$|^ra3replay$|^kwreplay$|^cnc3replay$|^rep$|^rec$\t/", $post['attachments'][$aid]['ext'])) {
 					if (in_array('replay_tool', $_G['setting']['plugins']['available'])) {	//判断插件是否启用
 						@include_once DISCUZ_ROOT.'./source/plugin/replay_tool/core.func.php';
 						$aidencode = packaids($post['attachments'][$aid]);
